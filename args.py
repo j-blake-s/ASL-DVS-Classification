@@ -3,8 +3,8 @@ import argparse
 def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch Training Args')
 
-    # Output
-    parser.add_argument('--verbose', action="store_true", help='Verbosity')
+    # General
+    parser.add_argument('--device', default="cuda", type=str, help='GPU to use')
 
     # Data
     parser.add_argument('--data_path', default="/data/DATASETS/pseudoDvs", type=str, help='path to data directory')
@@ -12,6 +12,10 @@ def parse_args():
 
     # Training
     parser.add_argument('--epochs', default=30, type=int, help='Number of training epochs')
+    parser.add_argument('-b','--batch_size', default=16, type=int, help='Size of training batches')
+
+    # Output
+    parser.add_argument('-v', '--verbose', action="store_true", help='Verbosity')
 
     args = parser.parse_args()
     return args
