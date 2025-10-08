@@ -2,21 +2,6 @@ import os
 import numpy as np
 from torch.utils.data import Dataset
 
-def parse_args():
-    import argparse
-    parser = argparse.ArgumentParser(description='Arguements')
-
-    parser.add_argument('--path', default=None, type=str, help='path to data directory')
-    
-    args = parser.parse_args()
-    return args
-
-
-
-
-
-
-
 
 # Grab list of files from directory
 def get_files(path, person, dataset): 
@@ -54,16 +39,9 @@ class ASL(Dataset):
 
 # Load data from files
 def load_data(train, test):
-  print("Loading ASL Dataset...")
+  print("Loading Dataset...")
   def progress_meter(pre): return lambda x: print(f"{pre}({int(100*x)}%)",end=("\r" if x < 1 else "\n"))
   train_data = ASL(train, print_func=progress_meter("\tLoading Train Dataset..."))
   test_data = ASL(test, print_func=progress_meter("\tLoading Test Dataset..."))
   return train_data, test_data
-
-
-
-path = "/data/DATASETS/pseudoDvs"
-blake, james, peyton = get_all(path, 'dvs')
-
-tr,te = load_data(train=blake[:10], test=peyton[:10])
 
