@@ -38,10 +38,10 @@ class ASL(Dataset):
 
 
 # Load data from files
-def load_data(train, test):
+def load_data(train, test, verbose=0):
   print("Loading Dataset...")
   def progress_meter(pre): return lambda x: print(f"{pre}({int(100*x)}%)",end=("\r" if x < 1 else "\n"))
-  train_data = ASL(train, print_func=progress_meter("\tLoading Train Dataset..."))
-  test_data = ASL(test, print_func=progress_meter("\tLoading Test Dataset..."))
+  train_data = ASL(train, print_func=(progress_meter("\tLoading Train Dataset...") if verbose > 0 else None))
+  test_data = ASL(test, print_func=(progress_meter("\tLoading Test Dataset...")if verbose > 0 else None))
   return train_data, test_data
 
