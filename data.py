@@ -20,11 +20,12 @@ def get_all(path, dataset):
 
 # Wrapper class for ASL dataset
 class ASL(Dataset):
-  def __init__(self, files, print_func=None):
+  def __init__(self, files, augment=None, print_func=None):
     
     self.size = len(files)
     self.videos = None
     self.labels = np.zeros(shape=(self.size,))
+    self.aug = augment
 
     for i, fn in enumerate(files):
       with np.load(fn) as f:
@@ -34,14 +35,25 @@ class ASL(Dataset):
       if print_func is not None: print_func((i+1)/self.size)
 
   def __len__(self): return self.size
-  def __getitem__(self, idx): return self.videos[idx], self.labels[idx]
+  def __getitem__(self, idx): 
+    vid = self.videos[idx]
+    vid = np.transpose(vid, (2, 0, 1, 3))
+    if self.aug is not None: vid = self.aug(vid)
+    return vid, self.labels[idx]
 
 
 # Load data from files
-def load_data(train, test, verbose=False):
+def load_data(train, test, augment=None, verbose=False):
   print("Loading Dataset...")
   def progress_meter(pre): return lambda x: print(f"{pre}({int(100*x)}%)",end=("\r" if x < 1 else "\n"))
-  train_data = ASL(train, print_func=(progress_meter("\tLoading Train Dataset...") if verbose else None))
-  test_data = ASL(test, print_func=(progress_meter("\tLoading Test Dataset...")if verbose else None))
+  if train is not None:
+    train_data = ASL(train, augment=augment, print_func=(progress_meter("\tLoading Train Dataset...") if verbose else None))
+  else:
+    train_data = None
+  
+  if test is not None:
+    test_data = ASL(test, print_func=(progress_meter("\tLoading Test Dataset...")if verbose else None))
+  else:
+    test_data = None
   return train_data, test_data
 

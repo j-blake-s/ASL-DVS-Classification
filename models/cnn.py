@@ -4,40 +4,54 @@ import torch.nn.functional as F
 
 
 class CNN(torch.nn.Module):
-  def __init__(self, channels, classes):
+  def __init__(self, args):
     super().__init__()
 
 
-    # Conv Layers
-    self.convs = torch.nn.ModuleList([
-      nn.Conv2d(2*groups, 16, kernel_size=3, stride=1, padding=1),
-      nn.Conv2d(16, 24, kernel_size=3, stride=1, padding=1),
-      nn.Conv2d(24, 32, kernel_size=3, stride=1, padding=1),
-      nn.Conv2d(32, 48, kernel_size=3, stride=1, padding=1),
-      nn.Conv2d(48, 64, kernel_size=3, stride=1, padding=1),
-      nn.Conv2d(64, 72, kernel_size=3, stride=1, padding=1),
-    ])
+    # Layers
+    self.net = nn.Sequential(
+      nn.Conv3d(args.channels, 4, kernel_size=(3,3,3), stride=1, padding=1),
+      nn.ReLU(),
+      nn.AvgPool3d(kernel_size=(2,2,2), stride=(2,2,2)),
+
+      nn.Conv3d(4, 8, kernel_size=(3,3,3), stride=1, padding=1),
+      nn.ReLU(), 
+      nn.AvgPool3d(kernel_size=(2,2,2), stride=(2,2,2)),
+
+      nn.Conv3d(8, 16, kernel_size=(3,3,3), stride=1, padding=1),
+      nn.ReLU(),
+      nn.AvgPool3d(kernel_size=(2,2,2), stride=(2,2,2)),
+    
+      nn.Conv3d(16, 32, kernel_size=(3,3,3), stride=1, padding=1),
+      nn.ReLU(),
+      nn.AvgPool3d(kernel_size=(2,2,2), stride=(2,2,2)),    
+
+      nn.Conv3d(32, 64, kernel_size=(3,3,1), stride=1, padding=(1,1,0)),
+      nn.ReLU(),
+      nn.AvgPool3d(kernel_size=(2,2,1), stride=(2,2,1)),   
+
+      nn.Conv3d(64, 64, kernel_size=(3,3,1), stride=1, padding=(1,1,0)),
+      nn.ReLU(),
+      nn.AvgPool3d(kernel_size=(2,2,1), stride=(2,2,1)),   
+
+
+    )
+
 
     # Dense Layers
     self.dense = torch.nn.ModuleList([
-      nn.Linear(2*3*72, 512),
-      nn.Linear(512, 128),
+      nn.Linear(64*30, 256),
+      nn.Linear(256, 64),
     ])
 
     # Output layer
-    self.output = nn.Linear(self.dense[-1].out_features, num_classes)
-    self.dropout = nn.Dropout(0.3)
+    self.output = nn.Linear(self.dense[-1].out_features, args.classes)
+    self.dropout = nn.Dropout(0.2)
 
 
   def forward(self, x):
 
-    x = self.acc(x)
-    # x = self.normalizer(x)
-
-    for conv in self.convs[:]: 
-      x = conv(x)
-      x = F.relu(x)
-      x = F.max_pool2d(x, 2)
+    x = self.net(x)
 
     x = torch.flatten(x, 1)
 
@@ -54,7 +68,7 @@ class CNN(torch.nn.Module):
 
 
 def load_model(args):
-  model = ACNN().to(args.device)
+  model = CNN(args).to(args.device)
   optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
   error = torch.nn.CrossEntropyLoss().to(args.device)
   classer = lambda x: torch.argmax(x,axis=-1)
