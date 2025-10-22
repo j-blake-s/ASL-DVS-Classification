@@ -20,7 +20,7 @@ def get_all(path, dataset):
 
 # Wrapper class for ASL dataset
 class ASL(Dataset):
-  def __init__(self, files, augment=None, print_func=None):
+  def __init__(self, files, augment=None, print_func=None, combine_classes=False):
     
     self.size = len(files)
     self.videos = None
@@ -43,16 +43,16 @@ class ASL(Dataset):
 
 
 # Load data from files
-def load_data(train, test, augment=None, verbose=False):
+def load_data(train, test, augment=None, verbose=False, combine_classes=False):
   print("Loading Dataset...")
   def progress_meter(pre): return lambda x: print(f"{pre}({int(100*x)}%)",end=("\r" if x < 1 else "\n"))
   if train is not None:
-    train_data = ASL(train, augment=augment, print_func=(progress_meter("\tLoading Train Dataset...") if verbose else None))
+    train_data = ASL(train, augment=augment, combine_classes=combine_classes, print_func=(progress_meter("\tLoading Train Dataset...") if verbose else None))
   else:
     train_data = None
   
   if test is not None:
-    test_data = ASL(test, print_func=(progress_meter("\tLoading Test Dataset...")if verbose else None))
+    test_data = ASL(test, combine_classes=combine_classes, print_func=(progress_meter("\tLoading Test Dataset...")if verbose else None))
   else:
     test_data = None
   return train_data, test_data

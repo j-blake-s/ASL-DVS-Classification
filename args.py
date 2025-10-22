@@ -16,6 +16,7 @@ def parse_args():
     parser.add_argument('--classes', default=10, type=int, help='Number of Classes')
     parser.add_argument('-t', '--timesteps', default=45, type=int, help='number of timesteps')
     parser.add_argument('--no_augment', default=False, action="store_true", help='Does not augment the data')
+    parser.add_argument('--combine-classes', default=True, action="store_true", help='Combine Similar Class Pairs')
 
     # Training
     parser.add_argument('--epochs', default=50, type=int, help='Number of training epochs')

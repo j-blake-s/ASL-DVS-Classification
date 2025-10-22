@@ -29,7 +29,7 @@ scheduler = CosineAnnealingLR(opt, args.epochs, 1e-5)
 blake, james, peyton = get_all(args.data_path, args.dataset)
 if args.no_augment is False: aug = aslAugment
 else: aug = None
-train_data, test_data = load_data(train=blake+james, test=peyton, augment=None, verbose=args.verbose)
+train_data, test_data = load_data(train=blake+james, test=peyton, augment=None, combine_classes=args.combine_classes, verbose=args.verbose)
 
 if args.no_augment:
   augment = None

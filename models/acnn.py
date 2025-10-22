@@ -64,7 +64,7 @@ class ACNN(torch.nn.Module):
     ])
 
     # Output layer
-    self.output = nn.Linear(self.dense[-1].out_features, args.classes)
+    self.output = nn.Linear(self.dense[-1].out_features, args.classes // 2 if args.combine_classes else args.classes)
     self.dropout = nn.Dropout(0.2)
 
 
