@@ -16,15 +16,18 @@ def train(model, data, augment, opt, err, pred, args):
       x = torch.permute(augment(x), (0, 2, 3, 4, 1))
     outputs = model(x)
 
+
     # Calculate Loss #
     loss = err(outputs, y)
-    loss.backward()
+    loss.backward(retain_graph=True)
     opt.step()
     opt.zero_grad()
+    
     
     # Update Stats #
     total_samples += x.shape[0]
     loss_sum += loss.cpu().data.item() * y.shape[0]
+
     correct_samples = torch.sum(pred(outputs)==y).cpu().data.item()
     total_correct_samples += correct_samples
     acc = total_correct_samples / total_samples

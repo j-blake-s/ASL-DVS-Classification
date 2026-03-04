@@ -9,9 +9,7 @@ from augment import aslAugment
 from training import train, test
 from utils import format, import_file, setup_dir
 
-## TODO ##
-## More model types
-## TODO ##  
+torch.autograd.set_detect_anomaly(True)
 
 ## Args ##
 args = parse_args()

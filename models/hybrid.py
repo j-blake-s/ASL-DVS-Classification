@@ -1,5 +1,9 @@
 import torch
-import torch.nn as nn
+from torch import nn
+# from .spikingV2 import SpkConv, SpkDense
+import lava.lib.dl.slayer as slayer
+
+# from spikingjelly.clock_driven.neuron import MultiStepLIFNode as LIF
 import torch.nn.functional as F
 
 class Accumulate(nn.Module):
@@ -21,18 +25,39 @@ class Accumulate(nn.Module):
     return x
 
 
-class ACNN(torch.nn.Module):
+
+params = {
+  'threshold'     : 1,
+  'current_decay' : 0.3,
+  'voltage_decay' : 0.25,
+  'tau_grad'      : 0.001,
+  'requires_grad' : True,
+}
+
+def SpkConv(in_, out_, kernel_size=3, stride=1, padding=1):
+  return slayer.block.cuba.Conv(
+    params, in_, out_, kernel_size=kernel_size, stride=stride, 
+    padding=padding, weight_scale=2, weight_norm=True, delay=False, 
+    delay_shift=False,
+  )
+def SpkDense(in_, out_):
+  return slayer.block.cuba.Dense(
+    params, in_, out_, weight_scale=2, weight_norm=True, delay_shift=False,
+  )
+
+class Hybrid(nn.Module):
   def __init__(self, args):
     super().__init__()
 
-    self.accumulate = Accumulate(args.timesteps, args.interval)
-
-    # Layers
-    self.net = nn.Sequential(
-      nn.Conv2d(args.channels*args.timesteps // args.interval, 4, kernel_size=3, stride=1, padding=1),
+    self.spiking = nn.ModuleList([
+      SpkConv(args.channels,2),
+      Accumulate(args.timesteps, args.interval),
+      nn.Conv2d(2 * args.timesteps // args.interval, 4, kernel_size=1, stride=1),
       nn.ReLU(),
-      nn.AvgPool2d(kernel_size=2, stride=2),
+      nn.AvgPool2d(kernel_size=2, stride=2)
+    ])
 
+    self.conv = nn.ModuleList([
       nn.Conv2d(4, 8, kernel_size=3, stride=1, padding=1),
       nn.ReLU(), 
       nn.AvgPool2d(kernel_size=2, stride=2),
@@ -52,9 +77,7 @@ class ACNN(torch.nn.Module):
       nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
       nn.ReLU(),
       nn.AvgPool2d(kernel_size=2, stride=2),   
-
-
-    )
+    ])
 
 
     # Dense Layers
@@ -68,11 +91,22 @@ class ACNN(torch.nn.Module):
     self.dropout = nn.Dropout(0.2)
 
 
+  def params(self):
+    model_ps = filter(lambda p: p.requires_grad, self.parameters())
+    p_count = sum([torch.prod(torch.tensor(p.size())) for p in model_ps])
+    return p_count.item()
+  
   def forward(self, x):
-    
-    x = self.accumulate(x)
+    B, C, H, W, T = x.shape
 
-    x = self.net(x)
+
+    # Spiking 
+    for s in self.spiking:
+      x = s(x)
+
+    # Conv
+    for c in self.conv:
+      x = c(x)
 
     x = torch.flatten(x, 1)
 
@@ -85,11 +119,17 @@ class ACNN(torch.nn.Module):
     x = F.relu(x)
     x = F.softmax(x, dim=1)
     return x 
+  
 
-
+# def load_model(args):
+#   model = SNN(args).to(args.device)
+#   optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+#   error = slayer.loss.SpikeRate(true_rate=0.5, false_rate=0.05, reduction='mean').to(args.device)
+#   classer = slayer.classifier.Rate.predict
+#   return model, optimizer, error, classer
 
 def load_model(args):
-  model = ACNN(args).to(args.device)
+  model = Hybrid(args).to(args.device)
   optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
   error = torch.nn.CrossEntropyLoss().to(args.device)
   classer = lambda x: torch.argmax(x,axis=-1)
